@@ -1,6 +1,6 @@
 import unittest
 
-from calc import add, divide, modulo, multiply, power, subtract
+from calc import absolute, add, divide, modulo, multiply, power, subtract
 
 
 class TestCalc(unittest.TestCase):
@@ -30,6 +30,12 @@ class TestCalc(unittest.TestCase):
     def test_modulo_by_zero(self):
         with self.assertRaises(ZeroDivisionError):
             modulo(1, 0)
+
+    def test_absolute(self):
+        self.assertEqual(absolute(-5), 5)
+        self.assertEqual(absolute(5), 5)
+        self.assertEqual(absolute(0), 0)
+        self.assertEqual(absolute(-2.5), 2.5)
 
 
 if __name__ == "__main__":

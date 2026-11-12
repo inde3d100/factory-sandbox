@@ -27,3 +27,8 @@ def power(a, b):
 def modulo(a, b):
     """Return the remainder of a divided by b."""
     return a % b
+
+
+def absolute(a):
+    """Return the absolute value of a."""
+    return abs(a)
