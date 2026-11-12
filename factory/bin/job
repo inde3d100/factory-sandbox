@@ -247,8 +247,20 @@ def label(kind, number, add=None, remove=None):
 
 
 def sessions_dir():
+    # All projects: the orchestrator may run from another folder (a parent of REPO, say).
     agent_dir = Path(os.environ.get("PI_CODING_AGENT_DIR", Path.home() / ".pi" / "agent")).expanduser()
-    return agent_dir / "sessions" / f"--{str(REPO).lstrip('/').replace('/', '-')}--"
+    return agent_dir / "sessions"
+
+
+def first_task(path):
+    """Text of a session file's first user message, reading no further than that."""
+    with path.open() as f:
+        for line in f:
+            e = json.loads(line) if line.strip() else {}
+            m = e.get("message") or {}
+            if e.get("type") == "message" and m.get("role") == "user":
+                return text_of(m.get("content"))
+    return ""
 
 
 def text_of(content):
@@ -270,11 +282,9 @@ def cost_usd(job):
     needle = f"Job folder: {job_dir(job['id'])}/"
     costs = {}
     for path in sessions_dir().glob("**/session.jsonl"):
-        entries = [json.loads(line) for line in path.open() if line.strip()]
-        msgs = [e for e in entries if e.get("type") == "message"]
-        first_user = next((m["message"] for m in msgs if m["message"].get("role") == "user"), None)
-        if not first_user or needle not in text_of(first_user.get("content")):
+        if needle not in first_task(path):
             continue
+        msgs = [e for e in map(json.loads, filter(str.strip, path.open())) if e.get("type") == "message"]
         for e in msgs:
             cost = ((e["message"].get("usage") or {}).get("cost") or {}).get("total")
             if e["message"].get("role") == "assistant" and cost:
