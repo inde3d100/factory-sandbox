@@ -22,3 +22,8 @@ def divide(a, b):
 def power(a, b):
     """Return a raised to the power of b."""
     return a ** b
+
+
+def modulo(a, b):
+    """Return the remainder of a divided by b."""
+    return a % b
