@@ -10,7 +10,7 @@ Usage:
   job queue                      what /factory run should do with each labeled issue
   job create <issue>             new job for an open `factory` issue; prints the job id
   job advance <job> <stage>      move a job to <stage>, or refuse
-  job merge <job>                APPROVE → sync with the base branch, gate, merge the PR
+  job merge <job>                APPROVE → sync with the base branch, gate, wait for GitHub's checks, merge the PR
   job feedback <job>             needs-human → build, with your feedback (stdin) as feedback-<k>.md
   job reject <job>               needs-info or needs-human → rejected, with your reason (stdin) as rejection.md
   job agents <job> <json>        record the routed agent set (called by factory/bin/route)
@@ -26,6 +26,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -585,6 +586,40 @@ def cmd_queue():
         print("\t".join(str(c) for c in row))
 
 
+def ci_verdict(checks):
+    """'pass', 'wait' or the failure text, from `gh pr checks --json name,bucket` rows."""
+    failed = [c["name"] for c in checks if c["bucket"] in ("fail", "cancel")]
+    if failed:
+        return f"GitHub checks failed: {', '.join(failed)}."
+    if checks and all(c["bucket"] in ("pass", "skipping") for c in checks):
+        return "pass"
+    return "wait"
+
+
+def wait_for_ci(job, head):
+    """None once GitHub's checks on `head` pass, or when the repo has no workflows; else why not."""
+    if not any((Path(job["worktree"]) / ".github" / "workflows").glob("*.y*ml")):
+        return None
+    start = time.monotonic()
+    limit = CONFIG.get("ci_timeout_minutes", 30) * 60
+    while True:
+        # Only trust checks once GitHub shows the commit just pushed as the PR head.
+        if gh_json("pr", "view", str(job["pr"]), "--json", "headRefOid")["headRefOid"] == head:
+            res = run(["gh", "pr", "checks", str(job["pr"]), "--json", "name,bucket"], check=False)
+            checks = json.loads(res.stdout) if res.stdout.strip().startswith("[") else []
+            verdict = ci_verdict(checks)
+            if verdict == "pass":
+                return None
+            if verdict != "wait":
+                return verdict
+            # shortcut: no check at all after 3 minutes means the workflows skip this PR (path filters); merge then.
+            if not checks and time.monotonic() - start > 180:
+                return None
+        if time.monotonic() - start > limit:
+            return f"GitHub checks didn't finish within {limit // 60} minutes."
+        time.sleep(20)
+
+
 def cmd_merge(job):
     sync(job)
     if job["stage"] == "approve":
@@ -614,6 +649,9 @@ def cmd_merge(job):
         git(job, "push", "origin", job["branch"])
         if gh_json("pr", "view", str(job["pr"]), "--json", "isDraft")["isDraft"]:
             gh("pr", "ready", str(job["pr"]))
+        ci = wait_for_ci(job, git(job, "rev-parse", "HEAD").stdout.strip())
+        if ci:
+            return fail(f"{ci} See the PR's checks on GitHub.")
         gh("pr", "merge", str(job["pr"]), f"--{CONFIG['merge_method']}")
     except Refused as e:
         return fail(f"The merge failed:\n\n```\n{e}\n```")

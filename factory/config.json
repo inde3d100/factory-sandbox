@@ -3,6 +3,7 @@
   "max_rounds": 3,
   "base_branch": "main",
   "merge_method": "merge",
+  "ci_timeout_minutes": 30,
   "labels": {
     "queue": "factory",
     "needs_info": "factory:needs-info",

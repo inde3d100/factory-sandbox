@@ -148,8 +148,11 @@ finished:
 **approve.** When the approver returns, read `decision.md`'s first line:
 
 - `APPROVE`: `factory/bin/job merge <id>`. It syncs the branch with the base,
-  runs the gate again, pushes, and merges the PR, ending in `merged`. If any
-  of that fails it moves the job to `needs-human` and says why.
+  runs the gate again, pushes, waits for the PR's GitHub checks, and merges
+  the PR, ending in `merged`. If any of that fails it moves the job to
+  `needs-human` and says why. The wait can take `ci_timeout_minutes`
+  (`config.json`), so run it with a bash timeout of at least that plus 10
+  minutes.
 - `ESCALATE`: `factory/bin/job advance <id> needs-human`. It marks the PR ready,
   posts the decision on it and labels the issue `factory:needs-human`.
 
