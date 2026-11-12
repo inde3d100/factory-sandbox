@@ -76,6 +76,12 @@ replies with one line; Pi wakes you when it finishes, and you advance that job
 then. While agents run, don't poll, don't sleep and don't call `bg_wait`: end
 your turn with a one-line status.
 
+So the user can watch each agent work: when `REX_SESSION` is set (Pi runs
+inside Rex), right after each launch call
+`subagent({ action: "inspector.open", id: "<run id>" })`. It opens that
+agent's live view in its own Rex pane. If it fails, say so once and carry on;
+the job doesn't depend on it.
+
 Every prompt starts with the job's header, built from `job.json`:
 
 ```
