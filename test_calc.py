@@ -1,6 +1,6 @@
 import unittest
 
-from calc import absolute, add, divide, modulo, multiply, power, subtract
+from calc import absolute, add, divide, modulo, multiply, negate, power, subtract
 
 
 class TestCalc(unittest.TestCase):
@@ -36,6 +36,12 @@ class TestCalc(unittest.TestCase):
         self.assertEqual(absolute(5), 5)
         self.assertEqual(absolute(0), 0)
         self.assertEqual(absolute(-2.5), 2.5)
+
+    def test_negate(self):
+        self.assertEqual(negate(5), -5)
+        self.assertEqual(negate(-5), 5)
+        self.assertEqual(negate(0), 0)
+        self.assertEqual(negate(2.5), -2.5)
 
 
 if __name__ == "__main__":

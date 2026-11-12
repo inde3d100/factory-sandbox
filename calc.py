@@ -32,3 +32,8 @@ def modulo(a, b):
 def absolute(a):
     """Return the absolute value of a."""
     return abs(a)
+
+
+def negate(a):
+    """Return a negated (minus a)."""
+    return -a
