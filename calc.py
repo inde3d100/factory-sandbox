@@ -37,3 +37,8 @@ def absolute(a):
 def negate(a):
     """Return a negated (minus a)."""
     return -a
+
+
+def square(a):
+    """Return a squared (a times a)."""
+    return a * a
